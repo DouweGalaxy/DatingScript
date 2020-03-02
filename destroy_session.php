@@ -30,30 +30,31 @@ development and design effort.
 ***********************************************/
 
 
-require_once(dirname(__FILE__).'/init.php');
+include_once('init.php');
 
-if (!isset($_REQUEST['a']) || empty($_REQUEST['a']) ) return '';
+$lastactivitytime = time() - ($config['session_timeout'] * 60);
 
-switch (trim($_REQUEST['a'])) {
+$temp = $osDB->getAll( 'SELECT * FROM ! where lastactivitytime < ?', array( ONLINE_USERS_TABLE, $lastactivitytime ) );
 
-	case 'getUsers':
+session_destroy();
 
-		$text = str_replace('|amp|','&amp;',strip_tags($_REQUEST['msg']));
+if ( sizeof( $temp ) > 0 ) {
 
-		$users = $osDB->getAll( 'select username from ! where username like ? order by username', array( USER_TABLE, '%'.$text.'%' ) );
+	foreach( $temp as $index => $row ) {
 
-		$ret = '<select name="reqdusers" id="reqdusers"  multiple style="width: 90px;">';
-		foreach ($users as $user) {
-			$ret.='<option value="'.$user['username'].'">'.$user['username'].'</option>';
+		if ( ( time() - $row['lastactivitytime'] ) > (int)( $config['session_timeout'] * 60 ) && $row['session_id'] != '' ) {
+
+			/* First destroy session */
+			session_id($row['session_id']);
+			session_start();
+			session_destroy();
+
+			$osDB->query( 'DELETE FROM ! WHERE userid = ?', array( ONLINE_USERS_TABLE, $row['userid'] ) );
 		}
-		$ret.='</select>&nbsp;';
-		$ret.='&nbsp;<input type="button" value="'.get_lang('ok').'" class="formbutton" onclick="selectedUsers();" />';
+	}
 
-		echo '|||usernameFind|:|'.$ret;
-		unset($ret);
-		break;
-
-	default : return ''; break;
 }
+
+unset($temp);
 
 ?>

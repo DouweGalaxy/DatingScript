@@ -29,31 +29,19 @@ which are entirely optional but help with the
 development and design effort.
 ***********************************************/
 
-
-require_once(dirname(__FILE__).'/init.php');
-
-if (!isset($_REQUEST['a']) || empty($_REQUEST['a']) ) return '';
-
-switch (trim($_REQUEST['a'])) {
-
-	case 'getUsers':
-
-		$text = str_replace('|amp|','&amp;',strip_tags($_REQUEST['msg']));
-
-		$users = $osDB->getAll( 'select username from ! where username like ? order by username', array( USER_TABLE, '%'.$text.'%' ) );
-
-		$ret = '<select name="reqdusers" id="reqdusers"  multiple style="width: 90px;">';
-		foreach ($users as $user) {
-			$ret.='<option value="'.$user['username'].'">'.$user['username'].'</option>';
-		}
-		$ret.='</select>&nbsp;';
-		$ret.='&nbsp;<input type="button" value="'.get_lang('ok').'" class="formbutton" onclick="selectedUsers();" />';
-
-		echo '|||usernameFind|:|'.$ret;
-		unset($ret);
-		break;
-
-	default : return ''; break;
+if ( !defined( 'SMARTY_DIR' ) ) {
+	include_once( 'init.php' );
 }
 
+if (isset($_GET['errid']) && $_GET['errid'] != '') {
+
+	$t->assign( 'errmsg', str_replace('SITENAME', $config['site_name'], get_lang('letter_errormsgs',$_GET['errid']) ) );
+
+}
+
+$t->assign('rendered_page', $t->fetch('forgotpass.tpl') );
+
+$t->display( 'index.tpl' );
+
+exit;
 ?>

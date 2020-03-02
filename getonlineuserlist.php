@@ -30,30 +30,40 @@ development and design effort.
 ***********************************************/
 
 
-require_once(dirname(__FILE__).'/init.php');
-
-if (!isset($_REQUEST['a']) || empty($_REQUEST['a']) ) return '';
-
-switch (trim($_REQUEST['a'])) {
-
-	case 'getUsers':
-
-		$text = str_replace('|amp|','&amp;',strip_tags($_REQUEST['msg']));
-
-		$users = $osDB->getAll( 'select username from ! where username like ? order by username', array( USER_TABLE, '%'.$text.'%' ) );
-
-		$ret = '<select name="reqdusers" id="reqdusers"  multiple style="width: 90px;">';
-		foreach ($users as $user) {
-			$ret.='<option value="'.$user['username'].'">'.$user['username'].'</option>';
-		}
-		$ret.='</select>&nbsp;';
-		$ret.='&nbsp;<input type="button" value="'.get_lang('ok').'" class="formbutton" onclick="selectedUsers();" />';
-
-		echo '|||usernameFind|:|'.$ret;
-		unset($ret);
-		break;
-
-	default : return ''; break;
+if ( !defined( 'SMARTY_DIR' ) ) {
+	include_once( 'minimum_init.php' );
 }
 
+$sql = 'SELECT distinct u.username, u.id, u.gender FROM ! u, ! ou WHERE u.allow_viewonline=? AND u.status in (?,?) AND u.id = ou.userid and u.id <> ? and ou.lastactivitytime > ? order by u.username';
+
+$data = $osDB->getAll( $sql, array( USER_TABLE, ONLINE_USERS_TABLE, '1', get_lang('status_enum','active'), 'active', $_SESSION['UserId'], time()-300) );
+
+$rcount = count($data);
+
+$ret='';
+
+if ( $rcount > 0 ) {
+	foreach ($data as $usr) {
+		$ret.='<a href="javascript:popUpScrollWindow2(\''.DOC_ROOT;
+		if ($config['enable_mod_rewrite'] == 'Y') {
+			if ($config['seo_username'] == 'Y') {
+				$ret.= $usr['username'];
+			} else {
+				$ret.= $usr['id'].'.htm';
+			}
+		}else{
+			$ret.='showprofile.php?';
+			if ($config['seo_username'] == 'Y') {
+				$ret.='username='.$usr['username'];
+			}else{
+				$ret.='id='.$usr['id'];
+			}
+		}
+		$ret.='\',\'top\',650,600)">';
+		$ret.=$usr['username'].' ('.get_lang('signup_gender_values',$usr['gender']).')</a><br />';
+	}
+} else {
+	$ret.=get_lang('noone_online');
+}
+echo '|||onlineUserList|:|'.$ret;
 ?>

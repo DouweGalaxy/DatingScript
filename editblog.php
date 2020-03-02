@@ -30,18 +30,18 @@ development and design effort.
 ***********************************************/
 
 if ( !defined( 'SMARTY_DIR' ) ) {
-	include_once( '../init.php' );
+	include_once( 'init.php' );
 }
 
 include( 'sessioninc.php' );
 
 include_once(LIB_DIR . 'blog_class.php');
 
-$blog =& new Blog(true);
+$blog =& new Blog();
 
 // If the preferences are missing, go to the settings page
 //
-if ( ! $blog->settingsExist($_SESSION['AdminId']) ) {
+if ( ! $blog->settingsExist($_SESSION['UserId']) ) {
 
       header( 'location: blogsettings.php?error_name=nosetup' );
       exit;
@@ -56,8 +56,7 @@ if ( isset($_POST['action']) && $_POST['action'] == 'edit_blog' ) {
       if ( $blog->getErrorMessage() ) {
 
           $t->assign ( 'error_message', $blog->getErrorMessage() );
-      }
-      else {
+      } else {
 
           header( 'location: bloglist.php' );
           exit;
@@ -69,25 +68,32 @@ if ( isset($_POST['action']) && $_POST['action'] == 'edit_blog' ) {
     $blog->prepData();
 }
 
+
 // If user turned off the gui editor, display the normal text box
 //
-$blog->loadSettings($_SESSION['AdminId']);
+
+$data = $blog->getData();
+
+if ($data['userid'] > 0) {
+	$blog->loadSettings($data['userid']);
+} else {
+	$blog->loadSettings($data['adminid']);
+}
 
 $t->assign('gui_editor', $blog->settings['gui_editor']);
-
 // Set the values to show on the page
 //
 $data = $blog->getData();
 
-$t->assign( 'data', $data);
-
 $t->assign( 'blog_id', $data['id'] ) ;
 
-$t->assign( 'date_posted', date('Y-m-d',$data['date_posted']) ) ;
-unset($data);
+$t->assign( 'data',  $data);
+
+$t->assign( 'date_posted', date('Y-m-d',$data['date_posted'] )) ;
 
 // Put the javascript and ccs into the head of the document
 //
+
 $js = '<script type="text/javascript" src="' . DOC_ROOT . 'javascript/calendar/epoch_classes.js"></script>';
 
 $css = '<link rel="stylesheet" type="text/css" href="' . DOC_ROOT . 'javascript/calendar/epoch_styles.css" />';
@@ -97,9 +103,12 @@ $t->assign('addtional_css', $css);
 
 // Make the page
 //
-$t->assign('rendered_page', $t->fetch('admin/editblog.tpl') );
 
-$t->display( 'admin/index.tpl' );
+unset( $data);
+
+$t->assign('rendered_page', $t->fetch('editblog.tpl') );
+
+$t->display( 'index.tpl' );
 
 exit;
 

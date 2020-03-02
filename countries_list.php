@@ -30,30 +30,23 @@ development and design effort.
 ***********************************************/
 
 
-require_once(dirname(__FILE__).'/init.php');
+$recs = $osDB->getAll('select code, name from ! order by name ', array( COUNTRIES_TABLE ) );
 
-if (!isset($_REQUEST['a']) || empty($_REQUEST['a']) ) return '';
+$countries = $allcountries = array();
 
-switch (trim($_REQUEST['a'])) {
+$allcountries['AA'] = 'All Countries';
 
-	case 'getUsers':
+foreach ($recs as $val ) {
 
-		$text = str_replace('|amp|','&amp;',strip_tags($_REQUEST['msg']));
+	if ($val['code'] != 'AA') {
 
-		$users = $osDB->getAll( 'select username from ! where username like ? order by username', array( USER_TABLE, '%'.$text.'%' ) );
+		$countries[$val['code']] = stripslashes($val['name']);
+		$allcountries[$val['code']] = stripslashes($val['name']);
 
-		$ret = '<select name="reqdusers" id="reqdusers"  multiple style="width: 90px;">';
-		foreach ($users as $user) {
-			$ret.='<option value="'.$user['username'].'">'.$user['username'].'</option>';
-		}
-		$ret.='</select>&nbsp;';
-		$ret.='&nbsp;<input type="button" value="'.get_lang('ok').'" class="formbutton" onclick="selectedUsers();" />';
+	}
 
-		echo '|||usernameFind|:|'.$ret;
-		unset($ret);
-		break;
-
-	default : return ''; break;
 }
+
+unset($recs);
 
 ?>

@@ -30,30 +30,36 @@ development and design effort.
 ***********************************************/
 
 
-require_once(dirname(__FILE__).'/init.php');
-
-if (!isset($_REQUEST['a']) || empty($_REQUEST['a']) ) return '';
-
-switch (trim($_REQUEST['a'])) {
-
-	case 'getUsers':
-
-		$text = str_replace('|amp|','&amp;',strip_tags($_REQUEST['msg']));
-
-		$users = $osDB->getAll( 'select username from ! where username like ? order by username', array( USER_TABLE, '%'.$text.'%' ) );
-
-		$ret = '<select name="reqdusers" id="reqdusers"  multiple style="width: 90px;">';
-		foreach ($users as $user) {
-			$ret.='<option value="'.$user['username'].'">'.$user['username'].'</option>';
-		}
-		$ret.='</select>&nbsp;';
-		$ret.='&nbsp;<input type="button" value="'.get_lang('ok').'" class="formbutton" onclick="selectedUsers();" />';
-
-		echo '|||usernameFind|:|'.$ret;
-		unset($ret);
-		break;
-
-	default : return ''; break;
+if ( !defined( 'SMARTY_DIR' ) ) {
+	include_once( 'init.php' );
 }
 
+$usertbl = USER_TABLE;
+$onlinetbl = ONLINE_USERS_TABLE;
+
+// get active users from past 60 seconds
+
+$data = $osDB->getAll( "SELECT id, username
+		FROM $usertbl
+			INNER JOIN $onlinetbl ON $usertbl.id = $onlinetbl.userid
+				WHERE 	$usertbl.allow_viewonline = ?  AND
+						( $usertbl.status = ? or $usertbl.status = ? ) AND
+						$usertbl.id <> ? AND
+						unix_timestamp() - $onlinetbl.lastactivitytime < 60 ", array( '1', 'active', get_lang('status_enum','active'), $_SESSION['UserId'] ) );
+
+$xml = '<?xml version="1.0"?>';
+
+$xml .= "<users>";
+
+if( strlen($data) > 0 ){
+
+	foreach ( $data as $user ) {
+		$xml .= '<user userid="'.$user['id'].'" username="'.$user['username'].'" />';
+	}
+}
+
+$xml .= "</users>";
+
+print( $xml );
+unset($xml);
 ?>
